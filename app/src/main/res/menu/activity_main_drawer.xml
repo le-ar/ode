@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_show_list"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="Список мероприятий" />
+        <item
+            android:id="@+id/nav_show_map"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="Карта мероприятий" />
+        <item
+            android:id="@+id/nav_create_event"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="Создать мероприятие" />
+        <item
+            android:id="@+id/nav_chat_location"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="Чат местности" />
+        <item
+            android:id="@+id/nav_show_qr"
+            android:icon="@drawable/ic_menu_share"
+            android:title="Показать QR" />
+    </group>
+
+</menu>
