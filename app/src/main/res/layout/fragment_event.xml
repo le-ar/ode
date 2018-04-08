@@ -27,22 +27,31 @@
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent">
 
-                <ScrollView
+                <android.support.v4.widget.SwipeRefreshLayout
+                    android:id="@+id/swipe_container"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
-                    android:background="@android:drawable/dialog_holo_light_frame"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/addComment">
 
-                    <LinearLayout
-                        android:orientation="vertical"
-                        android:id="@+id/Comments"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                    </LinearLayout>
-                </ScrollView>
+                    <ScrollView
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:background="@android:drawable/dialog_holo_light_frame"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="parent">
+
+                        <LinearLayout
+                            android:id="@+id/Comments"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"></LinearLayout>
+                    </ScrollView>
+                </android.support.v4.widget.SwipeRefreshLayout>
 
                 <android.support.constraint.ConstraintLayout
                     android:id="@+id/addComment"

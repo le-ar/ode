@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity
             fragmentTollBar = FirstFragmentT.class;
         } else if (id == R.id.nav_create_event) {
             fragmentClass = CreateEventFragment.class;
-            fragmentTollBar = FirstFragmentT.class;
+            fragmentTollBar = CreateEventFragmentT.class;
         } else if (id == R.id.nav_chat_location) {
             fragmentClass = ChatFragment.class;
             fragmentTollBar = FirstFragmentT.class;
