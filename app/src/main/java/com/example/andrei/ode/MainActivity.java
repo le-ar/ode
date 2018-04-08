@@ -1,5 +1,6 @@
 package com.example.andrei.ode;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -29,6 +30,7 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -40,6 +42,7 @@ public class MainActivity extends AppCompatActivity
     static Toolbar toolbar;
 
     static long MyID = 0;
+    static long MyIDVK = 0;
     static long MyPRating = 0;
     static long MyCRating = 0;
     static String MyToken = "";
@@ -54,6 +57,7 @@ public class MainActivity extends AppCompatActivity
     static MainActivity This;
     static NavigationView navigationView;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,11 +80,14 @@ public class MainActivity extends AppCompatActivity
 
         onNavigationItemSelected(navigationView.getMenu().getItem(0));
         Event.Refreash();
+
+        new URLImage((ImageView) navigationView.getHeaderView(0).findViewById(R.id.imageView)).execute(MyPhoto);
+        ((TextView) navigationView.getHeaderView(0).findViewById(R.id.FLName)).setText(MyFName + " " + MyLName);
     }
 
     @Override
     public void onBackPressed() {
-            DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else if (!isMainFragment) {
@@ -164,6 +171,7 @@ public class MainActivity extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+
     public static String doGet(String url)
             throws Exception {
 
@@ -172,7 +180,7 @@ public class MainActivity extends AppCompatActivity
 
         //add reuqest header
         connection.setRequestMethod("GET");
-        connection.setRequestProperty("User-Agent", "Mozilla/5.0" );
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0");
         connection.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
         connection.setRequestProperty("Content-Type", "application/json");
 
@@ -186,7 +194,7 @@ public class MainActivity extends AppCompatActivity
         bufferedReader.close();
 
 //      print result
-        Log.d("111","Response string: " + response.toString());
+        Log.d("111", "Response string: " + response.toString());
 
 
         return response.toString();

@@ -1,6 +1,7 @@
 package com.example.andrei.ode;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -19,6 +20,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TabHost;
@@ -30,14 +32,18 @@ import org.json.JSONObject;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 public class EventFragment extends Fragment {
 
     public static int CurrID = 0;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -84,6 +90,37 @@ public class EventFragment extends Fragment {
 
         ((TextView) view.findViewById(R.id.textView10)).setText(Event.Events.get(CurrID).LongDescription);
 
+        ((ImageView) view.findViewById(R.id.imageView8)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final String comment = ((EditText) view.findViewById(R.id.editText2)).getText().toString();
+                new AsyncTask<Void, String, String>() {
+                    @Override
+                    protected String doInBackground(Void... voids) {
+                        String s = "";
+                        try {
+                            s = MainActivity.doGet("http://54.38.186.12/add_comment?main_id=" + String.valueOf(MainActivity.MyID)
+                                    + "&event_id=" + String.valueOf(Event.Events.get(CurrID).Id) + "&token="
+                                    + MainActivity.MyToken + "&text=" + URLEncoder.encode(comment, "utf-8"));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        return s;
+                    }
+
+                    @Override
+                    protected void onPostExecute(final String result) {
+                        MainActivity.MainContext.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                RefreshComments();
+                            }
+                        });
+                    }
+                }.execute();
+            }
+        });
+
         new AsyncTask<Void, String, String>() {
             @Override
             protected String doInBackground(Void... voids) {
@@ -99,6 +136,7 @@ public class EventFragment extends Fragment {
             @Override
             protected void onPostExecute(final String result) {
                 MainActivity.MainContext.runOnUiThread(new Runnable() {
+                    @SuppressLint("SetTextI18n")
                     @Override
                     public void run() {
                         try {
@@ -141,48 +179,9 @@ public class EventFragment extends Fragment {
                 });
             }
         }.execute();
-        new AsyncTask<Void, String, String>() {
-            @Override
-            protected String doInBackground(Void... voids) {
-                String s = "";
-                try {
-                    s = MainActivity.doGet("http://54.38.186.12/get_comments?id=" + String.valueOf(Event.Events.get(CurrID).Id)
-                            + "&from=" + String.valueOf(Event.Events.get(CurrID).Comments_count - 1) + "&to="
-                            + String.valueOf(Event.Events.get(CurrID).Comments_count - 100 > -1 ? Event.Events.get(CurrID).Comments_count - 100 : 0));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return s;
-            }
 
-            @Override
-            protected void onPostExecute(final String result) {
-                MainActivity.MainContext.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            JSONArray jsonarray = null;
-                            final JSONObject jsonObject = new JSONObject(result);
-                            jsonarray = jsonObject.getJSONArray("comments");
-                            for (int i = 0; i < jsonarray.length(); i++) {
-                                JSONObject jsonobject = jsonarray.getJSONObject(i);
-                                ConstraintLayout item = (ConstraintLayout) getLayoutInflater().inflate(R.layout.item_comment, null);
-                                new URLImage((ImageView) item.findViewById(R.id.imgIcon)).execute(jsonobject.getString("photo"));
-                                ((TextView) (item.findViewById(R.id.textName))).setText(jsonobject.getString("author_name"));
-                                Date date = new java.util.Date(jsonobject.getLong("time") * 1000L);
-                                @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm dd.MM.yyyy");
-                                ((TextView) (item.findViewById(R.id.textCost))).setText(sdf.format(date));
-                                ((TextView) (item.findViewById(R.id.textTime))).setText(jsonobject.getString("text"));
-                                ((LinearLayout) getView().findViewById(R.id.Comments)).addView(item);
-                            }
+        RefreshComments();
 
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-            }
-        }.execute();
         final GestureDetectorCompat gDetector = new GestureDetectorCompat(getActivity(), new GestureDetector.OnGestureListener() {
 
             @Override
@@ -245,6 +244,52 @@ public class EventFragment extends Fragment {
                 return gDetector.onTouchEvent(event);
             }
         });
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    void RefreshComments() {
+        new AsyncTask<Void, String, String>() {
+            @Override
+            protected String doInBackground(Void... voids) {
+                String s = "";
+                try {
+                        s = MainActivity.doGet("http://54.38.186.12/get_comments?r=t&id=" + String.valueOf(Event.Events.get(CurrID).Id)
+                                + "&from=0&to=100");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return s;
+            }
+
+            @Override
+            protected void onPostExecute(final String result) {
+                MainActivity.MainContext.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            ((LinearLayout) getView().findViewById(R.id.Comments)).removeAllViews();
+                            JSONArray jsonarray = null;
+                            final JSONObject jsonObject = new JSONObject(result);
+                            jsonarray = jsonObject.getJSONArray("comments");
+                            for (int i = 0; i < jsonarray.length(); i++) {
+                                JSONObject jsonobject = jsonarray.getJSONObject(i);
+                                ConstraintLayout item = (ConstraintLayout) getLayoutInflater().inflate(R.layout.item_comment, null);
+                                new URLImage((ImageView) item.findViewById(R.id.imgIcon)).execute(jsonobject.getString("photo"));
+                                ((TextView) (item.findViewById(R.id.textName))).setText(jsonobject.getString("author_name"));
+                                Date date = new java.util.Date(jsonobject.getLong("time") * 1000L);
+                                @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm dd.MM.yyyy");
+                                ((TextView) (item.findViewById(R.id.textCost))).setText(sdf.format(date));
+                                ((TextView) (item.findViewById(R.id.textTime))).setText(jsonobject.getString("text"));
+                                ((LinearLayout) getView().findViewById(R.id.Comments)).addView(item);
+                            }
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        }.execute();
     }
 
     public void switchTabs(boolean direction, View view) {

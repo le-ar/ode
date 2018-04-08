@@ -51,6 +51,16 @@ public class FirstFragment extends Fragment implements SwipeRefreshLayout.OnRefr
             Event evt = Event.Events.get(i);
             ConstraintLayout item = (ConstraintLayout) getLayoutInflater().inflate(R.layout.item_event, null);
             ((TextView) (item.findViewById(R.id.textName))).setText(evt.Name);
+
+            if (System.currentTimeMillis() / 1000 > Event.Events.get(EventFragment.CurrID).TimeBegin) {
+                ((TextView) (item.findViewById(R.id.textPeople))).setText(String.valueOf(evt.Fu_count));
+                ((TextView) (item.findViewById(R.id.textRating))).setText(String.valueOf(evt.Fu_rating));
+                ((TextView) (item.findViewById(R.id.textComments))).setText(String.valueOf(evt.Comments_count));
+            } else {
+                ((TextView) (item.findViewById(R.id.textPeople))).setText(String.valueOf(evt.Pa_count));
+                ((TextView) (item.findViewById(R.id.textRating))).setText(String.valueOf(evt.Pa_rating));
+                ((TextView) (item.findViewById(R.id.textComments))).setText(String.valueOf(evt.Comments_count));
+            }
             Date date = new java.util.Date(evt.TimeBegin * 1000L);
             SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd.MM.yyyy\nHH:mm");
             ((TextView) (item.findViewById(R.id.textTime))).setText(sdf.format(date));
