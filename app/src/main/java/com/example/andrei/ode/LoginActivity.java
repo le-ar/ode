@@ -42,7 +42,7 @@ public class LoginActivity extends AppCompatActivity {
                     protected String doInBackground(Void... voids) {
                         String s = "";
                         try {
-                            s = MainActivity.doGet("http://54.38.186.12/auth_vk?token=" + fres.accessToken);
+                            s = MainActivity.doGet(MainActivity.Domain+"/auth_vk?token=" + fres.accessToken);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }

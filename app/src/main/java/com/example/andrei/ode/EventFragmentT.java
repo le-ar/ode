@@ -20,13 +20,7 @@ public class EventFragmentT extends Fragment {
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        EventFragment.evtft = view.findViewById(R.id.ToolBarEvent);
         super.onViewCreated(view, savedInstanceState);
-        if (System.currentTimeMillis() / 1000 > Event.Events.get(EventFragment.CurrID).TimeBegin) {
-            ((TextView) view.findViewById(R.id.textView4)).setText(String.valueOf(Event.Events.get(EventFragment.CurrID).Pa_count));
-            ((TextView) view.findViewById(R.id.textView6)).setText(String.valueOf(Event.Events.get(EventFragment.CurrID).Pa_rating));
-        } else {
-            ((TextView) view.findViewById(R.id.textView4)).setText(String.valueOf(Event.Events.get(EventFragment.CurrID).Fu_count));
-            ((TextView) view.findViewById(R.id.textView6)).setText(String.valueOf(Event.Events.get(EventFragment.CurrID).Fu_rating));
-        }
     }
 }

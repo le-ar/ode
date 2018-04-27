@@ -3,6 +3,7 @@ package com.example.andrei.ode;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -31,6 +32,10 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -40,6 +45,8 @@ import java.net.URL;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
     static Toolbar toolbar;
+
+    static String Domain = "http://139.99.98.213";
 
     static long MyID = 0;
     static long MyIDVK = 0;
@@ -65,6 +72,7 @@ public class MainActivity extends AppCompatActivity
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         This = this;
@@ -79,7 +87,7 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         onNavigationItemSelected(navigationView.getMenu().getItem(0));
-        Event.Refreash();
+        Event.Refreash(true);
 
         new URLImage((ImageView) navigationView.getHeaderView(0).findViewById(R.id.imageView)).execute(MyPhoto);
         ((TextView) navigationView.getHeaderView(0).findViewById(R.id.FLName)).setText(MyFName + " " + MyLName);
@@ -170,6 +178,46 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    public static void ToastError(String error) {
+        try {
+            JSONObject jsonObject = new JSONObject(error);
+            switch (jsonObject.getInt("error")) {
+                case 11:
+                    error = "Сессия неверна.\nПопробуйте перезайти в приложение.";
+                    break;
+                case 12:
+                    error = "Вы ввели неверные данные (" + jsonObject.getString("q") + ").";
+                    break;
+                case 13:
+                    error = "Сессия неверна.\nПопробуйте перезайти в приложение.";
+                    break;
+                case 14:
+                    error = "Отсутствует мерроприятие с данным идентификатором.";
+                    break;
+                case 15:
+                    error = "Вы ввели неверное время (Возможно, вы ввели старую дату).";
+                    break;
+                case 16:
+                    error = "Вы ввели неверные данные (" + jsonObject.getString("q") + ").";
+                    break;
+                case 21:
+                    error = "Вы не обладаете необходимыми правами для выполнения данного действия.";
+                    break;
+                case 22:
+                    error = "Вы попытались выполнить действие в неподходящее время.";
+                    break;
+                case 31:
+                    error = jsonObject.getString("q") + ".";
+                    break;
+                default:
+                    return;
+            }
+            Toast.makeText(MainContext, error, Toast.LENGTH_SHORT).show();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     public static String doGet(String url)

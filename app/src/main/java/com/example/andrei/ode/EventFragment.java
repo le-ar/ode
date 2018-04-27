@@ -10,6 +10,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
+import android.support.constraint.ConstraintSet;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GestureDetectorCompat;
@@ -24,6 +25,7 @@ import android.view.ViewManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Space;
 import android.widget.TabHost;
 import android.widget.TextView;
 
@@ -43,7 +45,8 @@ import java.util.TimeZone;
 
 public class EventFragment extends Fragment {
 
-    public static int CurrID = 0;
+    public static ConstraintLayout evtft;
+    public static long CurrID = 0;
 
 
     @Override
@@ -56,6 +59,199 @@ public class EventFragment extends Fragment {
     @Override
     public void onViewCreated(final View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        new AsyncTask<Void, String, String>() {
+            @Override
+            protected String doInBackground(Void... voids) {
+                String s = "";
+                try {
+                    s = MainActivity.doGet(MainActivity.Domain + "/get_event?" +
+                            "main_id=" + MainActivity.MyID
+                            + "&id=" + CurrID);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return s;
+            }
+
+            @Override
+            protected void onPostExecute(final String result) {
+                try {
+                    final JSONObject jsonObject = new JSONObject(result);
+                    final JSONObject jsonobject = jsonObject.getJSONObject("evt");
+                    int offset = TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings();
+
+
+                    final Event evt = new Event();
+                    evt.Id = jsonobject.getLong("id");
+                    evt.AuthorId = jsonobject.getLong("main_id");
+                    evt.TimeBegin = jsonobject.getLong("time");
+                    evt.TimeEnd = jsonobject.getLong("time_end");
+                    evt.Cost = jsonobject.getLong("cost");
+                    evt.MaxPeople = jsonobject.getLong("max_people");
+                    evt.Fu_rating = jsonobject.getLong("fu_reputation");
+                    evt.Pa_rating = jsonobject.getLong("pa_reputation");
+                    evt.Fu_count = jsonobject.getLong("fu_count");
+                    evt.Pa_count = jsonobject.getLong("pa_count");
+                    evt.Comments_count = jsonobject.getLong("comments_count");
+                    evt.Type = jsonobject.getInt("type");
+                    evt.Name = jsonobject.getString("name");
+                    evt.ShortDescription = jsonobject.getString("s_description");
+                    evt.LongDescription = jsonobject.getString("l_description");
+                    evt.Latitude = jsonobject.getDouble("latitude");
+                    evt.Longitude = jsonobject.getDouble("longitude");
+
+                    ((TextView) view.findViewById(R.id.textName)).setText(evt.Name);
+
+                    new AsyncTask<Void, String, String>() {
+                        @Override
+                        protected String doInBackground(Void... voids) {
+                            String s = "";
+                            try {
+                                s = MainActivity.doGet(MainActivity.Domain + "/get_user?id=" + String.valueOf(evt.AuthorId));
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            return s;
+                        }
+
+                        @Override
+                        protected void onPostExecute(final String result) {
+                            MainActivity.MainContext.runOnUiThread(new Runnable() {
+                                @SuppressLint("SetTextI18n")
+                                @Override
+                                public void run() {
+                                    try {
+                                        final JSONObject jsonObject = new JSONObject(result);
+                                        new URLImage((ImageView) view.findViewById(R.id.imageView3)).execute(jsonObject.getString("photo"));
+                                        if (evt.AuthorId == MainActivity.MyID) {
+                                            if (System.currentTimeMillis() / 1000 > evt.TimeBegin
+                                                    && System.currentTimeMillis() / 1000 < evt.TimeEnd)
+                                                ((TextView) view.findViewById(R.id.textView9)).setText("Сканировать\nQR");
+                                            if (System.currentTimeMillis() / 1000 < evt.TimeBegin)
+                                                ((TextView) view.findViewById(R.id.textView9)).setText("Удалить\nмероприятие");
+                                            if (System.currentTimeMillis() / 1000 > evt.TimeEnd) {
+                                                ((ViewGroup) view.findViewById(R.id.imageView5).getParent()).removeView(view.findViewById(R.id.imageView5));
+                                                ((ViewGroup) view.findViewById(R.id.textView9).getParent()).removeView(view.findViewById(R.id.textView9));
+                                            }
+                                        } else {
+                                            view.findViewById(R.id.imageView5).setOnClickListener(new View.OnClickListener() {
+                                                @Override
+                                                public void onClick(View v) {
+                                                    Intent browserIntent = null;
+                                                    try {
+                                                        browserIntent = new Intent(Intent.ACTION_VIEW,
+                                                                Uri.parse("http://vk.com/id" + jsonObject.getString("vk_id")));
+                                                    } catch (JSONException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                    startActivity(browserIntent);
+                                                }
+                                            });
+                                            ((TextView) view.findViewById(R.id.textView9)).setText("Связаться с\nорганизатором");
+                                        }
+
+                                        ((TextView) view.findViewById(R.id.textRatingCreator)).setText(jsonObject.getString("reputation"));
+                                        ((TextView) view.findViewById(R.id.textView11)).setText(jsonObject.getString("c_reputation"));
+                                        ((TextView) view.findViewById(R.id.textView7)).setText(jsonObject.getString("first_name") + " " + jsonObject.getString("last_name"));
+
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+                        }
+                    }.execute();
+
+                    Date date = new java.util.Date(evt.TimeBegin * 1000L);
+                    @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd.MM.yyyy\nHH:mm");
+                    String timeZone = Calendar.getInstance().getTimeZone().getID();
+                    ((TextView) (view.findViewById(R.id.textTime))).setText(sdf.format(date));
+
+                    date = new java.util.Date(evt.TimeEnd * 1000L);
+                    timeZone = Calendar.getInstance().getTimeZone().getID();
+                    ((TextView) (view.findViewById(R.id.textTime3))).setText(sdf.format(date));
+
+                    if (evt.Cost > 0)
+                        ((TextView) (view.findViewById(R.id.textCost))).setText(String.valueOf(evt.Cost));
+                    else
+                        ((TextView) (view.findViewById(R.id.textCost))).setText("Бесплатно");
+
+                    ((TextView) view.findViewById(R.id.textView10)).setText(evt.LongDescription);
+
+                    ((ImageView) view.findViewById(R.id.imgLocation)).setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            MapActivity.isShow = true;
+                            MapActivity.Lat = evt.Latitude;
+                            MapActivity.Lng = evt.Longitude;
+                            startActivity(new Intent(MainActivity.MainContext, MapActivity.class));
+                        }
+                    });
+
+                    if (System.currentTimeMillis() / 1000 > evt.TimeBegin) {
+                        ((TextView) evtft.findViewById(R.id.textView4)).setText(String.valueOf(evt.Pa_count));
+                        ((TextView) evtft.findViewById(R.id.textView6)).setText(String.valueOf(evt.Pa_rating));
+                        ((ViewGroup) evtft).removeView(evtft.findViewById(R.id.imageView2));
+
+                        ConstraintSet constraintSet = new ConstraintSet();
+                        constraintSet.clone(evtft);
+
+                        constraintSet.connect(((Space) evtft.findViewById(R.id.space)).getId(), ConstraintSet.END, evtft.getId(), ConstraintSet.END, 8);
+                        constraintSet.connect(((TextView) evtft.findViewById(R.id.textView5)).getId(), ConstraintSet.END, evtft.getId(), ConstraintSet.END, 8);
+                        constraintSet.applyTo(evtft);
+
+                    } else {
+                        ((TextView) evtft.findViewById(R.id.textView4)).setText(String.valueOf(evt.Fu_count));
+                        ((TextView) evtft.findViewById(R.id.textView6)).setText(String.valueOf(evt.Fu_rating));
+
+                        if (jsonObject.getInt("f_c") == 1) {
+                            ((ImageView) evtft.findViewById(R.id.imageView2)).setImageResource(android.R.drawable.ic_notification_clear_all);
+                        }
+                        ((ImageView) evtft.findViewById(R.id.imageView2)).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                new AsyncTask<Void, String, String>() {
+                                    @Override
+                                    protected String doInBackground(Void... voids) {
+                                        String s = "";
+                                        try {
+                                            s = MainActivity.doGet(MainActivity.Domain + "/change_count?id=" + String.valueOf(MainActivity.MyID)
+                                                    + "&event_id=" + String.valueOf(CurrID) + "&token="
+                                                    + MainActivity.MyToken);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                        return s;
+                                    }
+
+                                    @Override
+                                    protected void onPostExecute(final String result) {
+                                        try {
+                                            JSONObject jsonObject1 = new JSONObject(result);
+                                            if (jsonObject1.getString("status").equals("ADD")) {
+                                                ((ImageView) evtft.findViewById(R.id.imageView2)).setImageResource(android.R.drawable.ic_notification_clear_all);
+                                            } else {
+                                                ((ImageView) evtft.findViewById(R.id.imageView2)).setImageResource(android.R.drawable.ic_menu_add);
+                                            }
+                                            ((TextView) evtft.findViewById(R.id.textView4)).setText(String.valueOf(jsonObject1.getString("people")));
+                                            ((TextView) evtft.findViewById(R.id.textView6)).setText(String.valueOf(jsonObject1.getString("rating")));
+                                        } catch (JSONException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }.execute();
+                            }
+                        });
+                    }
+                    Event.Refreash(false);
+                } catch (Exception e) {
+                    Log.e("JSON", e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }.execute();
+
         TabHost tabHost = (TabHost) view.findViewById(R.id.tabHost);
 
         tabHost.setup();
@@ -86,23 +282,6 @@ public class EventFragment extends Fragment {
 
         tabHost.setCurrentTab(0);
 
-        ((TextView) view.findViewById(R.id.textName)).setText(Event.Events.get(CurrID).Name);
-
-        Date date = new java.util.Date(Event.Events.get(CurrID).TimeBegin * 1000L);
-        SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd.MM.yyyy\nHH:mm");
-        String timeZone = Calendar.getInstance().getTimeZone().getID();
-        ((TextView) (view.findViewById(R.id.textTime))).setText(sdf.format(date));
-
-        date = new java.util.Date(Event.Events.get(CurrID).TimeEnd * 1000L);
-        timeZone = Calendar.getInstance().getTimeZone().getID();
-        ((TextView) (view.findViewById(R.id.textTime3))).setText(sdf.format(date));
-
-        if (Event.Events.get(CurrID).Cost > 0)
-            ((TextView) (view.findViewById(R.id.textCost))).setText(String.valueOf(Event.Events.get(CurrID).Cost));
-        else
-            ((TextView) (view.findViewById(R.id.textCost))).setText("Бесплатно");
-
-        ((TextView) view.findViewById(R.id.textView10)).setText(Event.Events.get(CurrID).LongDescription);
 
         ((ImageView) view.findViewById(R.id.imageView8)).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -113,8 +292,8 @@ public class EventFragment extends Fragment {
                     protected String doInBackground(Void... voids) {
                         String s = "";
                         try {
-                            s = MainActivity.doGet("http://54.38.186.12/add_comment?main_id=" + String.valueOf(MainActivity.MyID)
-                                    + "&event_id=" + String.valueOf(Event.Events.get(CurrID).Id) + "&token="
+                            s = MainActivity.doGet(MainActivity.Domain + "/add_comment?main_id=" + String.valueOf(MainActivity.MyID)
+                                    + "&event_id=" + String.valueOf(CurrID) + "&token="
                                     + MainActivity.MyToken + "&text=" + URLEncoder.encode(comment, "utf-8"));
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -135,64 +314,6 @@ public class EventFragment extends Fragment {
             }
         });
 
-        new AsyncTask<Void, String, String>() {
-            @Override
-            protected String doInBackground(Void... voids) {
-                String s = "";
-                try {
-                    s = MainActivity.doGet("http://54.38.186.12/get_user?id=" + String.valueOf(Event.Events.get(CurrID).AuthorId));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return s;
-            }
-
-            @Override
-            protected void onPostExecute(final String result) {
-                MainActivity.MainContext.runOnUiThread(new Runnable() {
-                    @SuppressLint("SetTextI18n")
-                    @Override
-                    public void run() {
-                        try {
-                            final JSONObject jsonObject = new JSONObject(result);
-                            new URLImage((ImageView) view.findViewById(R.id.imageView3)).execute(jsonObject.getString("photo"));
-                            if (Event.Events.get(CurrID).AuthorId == MainActivity.MyID) {
-                                if (System.currentTimeMillis() / 1000 > Event.Events.get(EventFragment.CurrID).TimeBegin
-                                        && System.currentTimeMillis() / 1000 < Event.Events.get(EventFragment.CurrID).TimeEnd)
-                                    ((TextView) view.findViewById(R.id.textView9)).setText(jsonObject.getString("Сканировать QR"));
-                                if (System.currentTimeMillis() / 1000 < Event.Events.get(EventFragment.CurrID).TimeBegin)
-                                    ((TextView) view.findViewById(R.id.textView9)).setText(jsonObject.getString("Удалить мероприятие"));
-                                if (System.currentTimeMillis() / 1000 > Event.Events.get(EventFragment.CurrID).TimeEnd) {
-                                    ((ViewManager) view.findViewById(R.id.imageView5).getParent()).removeView(view.findViewById(R.id.imageView5));
-                                    ((ViewManager) view.findViewById(R.id.textView9).getParent()).removeView(view.findViewById(R.id.textView9));
-                                }
-                            } else {
-                                view.findViewById(R.id.imageView5).setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        Intent browserIntent = null;
-                                        try {
-                                            browserIntent = new Intent(Intent.ACTION_VIEW,
-                                                    Uri.parse("http://vk.com/id" + jsonObject.getString("vk_id")));
-                                        } catch (JSONException e) {
-                                            e.printStackTrace();
-                                        }
-                                        startActivity(browserIntent);
-                                    }
-                                });
-                                ((TextView) view.findViewById(R.id.textView9)).setText("Связаться с\nорганизатором");
-                            }
-
-                            ((TextView) view.findViewById(R.id.textRatingCreator)).setText(jsonObject.getString("reputation"));
-                            ((TextView) view.findViewById(R.id.textView7)).setText(jsonObject.getString("first_name") + " " + jsonObject.getString("last_name"));
-
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-            }
-        }.execute();
 
         RefreshComments();
 
@@ -267,8 +388,8 @@ public class EventFragment extends Fragment {
             protected String doInBackground(Void... voids) {
                 String s = "";
                 try {
-                        s = MainActivity.doGet("http://54.38.186.12/get_comments?r=t&id=" + String.valueOf(Event.Events.get(CurrID).Id)
-                                + "&from=0&to=100");
+                    s = MainActivity.doGet(MainActivity.Domain + "/get_comments?r=t&id=" + String.valueOf(CurrID)
+                            + "&from=0&to=100");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -297,7 +418,7 @@ public class EventFragment extends Fragment {
                                 ((LinearLayout) getView().findViewById(R.id.Comments)).addView(item);
                             }
 
-                        } catch (JSONException e) {
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }

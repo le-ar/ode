@@ -43,7 +43,7 @@ public class Event implements Comparable {
     public long Comments_count;
     public long MaxPeople;
 
-    public static void Refreash() {
+    public static void Refreash(final boolean gotoMain) {
         Events.clear();
 
         new AsyncTask<Void, String, String>() {
@@ -51,7 +51,7 @@ public class Event implements Comparable {
             protected String doInBackground(Void... voids) {
                 String s = "";
                 try {
-                    s = MainActivity.doGet("http://54.38.186.12/showallevents");
+                    s = MainActivity.doGet(MainActivity.Domain + "/showallevents");
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -88,7 +88,8 @@ public class Event implements Comparable {
                         Events.add(evt);
                     }
                     Collections.sort(Events);
-                    MainActivity.This.onNavigationItemSelected(MainActivity.This.navigationView.getMenu().getItem(0));
+                    if (gotoMain)
+                        MainActivity.This.onNavigationItemSelected(MainActivity.This.navigationView.getMenu().getItem(0));
                 } catch (JSONException e) {
                     Log.e("JSON", e.getMessage());
                     e.printStackTrace();

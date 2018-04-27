@@ -1,5 +1,6 @@
 package com.example.andrei.ode;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,6 +12,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -48,11 +50,11 @@ public class FirstFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                 android.R.color.holo_red_light);
 
         for (int i = 0; i < Event.Events.size(); i++) {
-            Event evt = Event.Events.get(i);
+            final Event evt = Event.Events.get(i);
             ConstraintLayout item = (ConstraintLayout) getLayoutInflater().inflate(R.layout.item_event, null);
             ((TextView) (item.findViewById(R.id.textName))).setText(evt.Name);
 
-            if (System.currentTimeMillis() / 1000 > Event.Events.get(EventFragment.CurrID).TimeBegin) {
+            if (System.currentTimeMillis() / 1000 > evt.TimeBegin) {
                 ((TextView) (item.findViewById(R.id.textPeople))).setText(String.valueOf(evt.Fu_count));
                 ((TextView) (item.findViewById(R.id.textRating))).setText(String.valueOf(evt.Fu_rating));
                 ((TextView) (item.findViewById(R.id.textComments))).setText(String.valueOf(evt.Comments_count));
@@ -69,11 +71,20 @@ public class FirstFragment extends Fragment implements SwipeRefreshLayout.OnRefr
             else
                 ((TextView) (item.findViewById(R.id.textCost))).setText("Бесплатно");
             final int finalI = i;
+            ((ImageView)item.findViewById(R.id.imgLocation)).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                        MapActivity.isShow = true;
+                        MapActivity.Lat = evt.Latitude;
+                        MapActivity.Lng = evt.Longitude;
+                        startActivity(new Intent(MainActivity.MainContext, MapActivity.class));
+                }
+            });
             item.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     MainActivity.isMainFragment = false;
-                    EventFragment.CurrID = finalI;
+                    EventFragment.CurrID = evt.Id;
 
                     Fragment fragment = null;
                     Class fragmentClass = null;
@@ -81,15 +92,7 @@ public class FirstFragment extends Fragment implements SwipeRefreshLayout.OnRefr
 
                     fragmentClass = EventFragment.class;
                     fragmentTollBar = EventFragmentT.class;
-
-                    try {
-                        fragment = (Fragment) fragmentClass.newInstance();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
                     FragmentManager fragmentManager = MainActivity.This.getSupportFragmentManager();
-                    fragmentManager.beginTransaction().replace(R.id.container, fragment).commit();
-
 
                     try {
                         fragment = (Fragment) fragmentTollBar.newInstance();
@@ -97,6 +100,15 @@ public class FirstFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                         e.printStackTrace();
                     }
                     fragmentManager.beginTransaction().replace(MainActivity.toolbar.getId(), fragment).commit();
+
+                    try {
+                        fragment = (Fragment) fragmentClass.newInstance();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    fragmentManager.beginTransaction().replace(R.id.container, fragment).commit();
+
+
                 }
             });
             ((LinearLayout) getView().findViewById(R.id.Main)).addView(item);
@@ -105,6 +117,6 @@ public class FirstFragment extends Fragment implements SwipeRefreshLayout.OnRefr
     }
     @Override
     public void onRefresh() {
-        Event.Refreash();
+        Event.Refreash(true);
     }
 }
