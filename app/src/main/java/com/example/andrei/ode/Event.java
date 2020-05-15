@@ -1,5 +1,13 @@
 package com.example.andrei.ode;
 
+import android.annotation.SuppressLint;
+import android.arch.persistence.room.Dao;
+import android.arch.persistence.room.Delete;
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Insert;
+import android.arch.persistence.room.PrimaryKey;
+import android.arch.persistence.room.Query;
+import android.arch.persistence.room.Update;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
@@ -22,10 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+import static com.example.andrei.ode.LoginActivity.db;
+
+@Entity
 public class Event implements Comparable {
     public static List<Event> Events = new ArrayList<>();
+    public static Map<Long, Integer> EventsID = new HashMap<>();
 
-    public long Id;
+   @PrimaryKey public long Id;
     public String Name;
     public long AuthorId;
     public long TimeBegin;
@@ -43,8 +55,7 @@ public class Event implements Comparable {
     public long Comments_count;
     public long MaxPeople;
 
-    public static void Refreash(final boolean gotoMain) {
-        Events.clear();
+    public static void Refresh(final boolean gotoMain) {
 
         new AsyncTask<Void, String, String>() {
             @Override
@@ -52,12 +63,14 @@ public class Event implements Comparable {
                 String s = "";
                 try {
                     s = MainActivity.doGet(MainActivity.Domain + "/showallevents");
+                    LoginActivity.db.getEventDao().deleteAll();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 return s;
             }
 
+            @SuppressLint("StaticFieldLeak")
             @Override
             protected void onPostExecute(final String result) {
                 JSONArray jsonarray = null;
@@ -65,9 +78,12 @@ public class Event implements Comparable {
                     JSONObject jsonObject = new JSONObject(result);
                     jsonarray = jsonObject.getJSONArray("events");
                     int offset = TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings();
+                    Events.clear();
+                    EventsID.clear();
+
                     for (int i = 0; i < jsonarray.length(); i++) {
                         JSONObject jsonobject = jsonarray.getJSONObject(i);
-                        Event evt = new Event();
+                        final Event evt = new Event();
                         evt.Id = jsonobject.getLong("id");
                         evt.AuthorId = jsonobject.getLong("main_id");
                         evt.TimeBegin = jsonobject.getLong("time");
@@ -86,8 +102,18 @@ public class Event implements Comparable {
                         evt.Latitude = jsonobject.getDouble("latitude");
                         evt.Longitude = jsonobject.getDouble("longitude");
                         Events.add(evt);
+                        new AsyncTask<Void, Void, Void>() {
+                            @Override
+                            protected Void doInBackground(Void... voids) {
+                                db.getEventDao().insert(evt);
+                                return null;
+                            }
+                        }.execute();
                     }
                     Collections.sort(Events);
+                    for (int i = 0; i < Events.size(); i++) {
+                        EventsID.put(Events.get(i).Id, i);
+                    }
                     if (gotoMain)
                         MainActivity.This.onNavigationItemSelected(MainActivity.This.navigationView.getMenu().getItem(0));
                 } catch (JSONException e) {

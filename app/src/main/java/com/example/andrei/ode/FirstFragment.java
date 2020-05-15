@@ -9,6 +9,7 @@ import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,12 +50,13 @@ public class FirstFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                 android.R.color.holo_orange_light,
                 android.R.color.holo_red_light);
 
+        Log.d("SIZE", String.valueOf(Event.Events.size()));
         for (int i = 0; i < Event.Events.size(); i++) {
             final Event evt = Event.Events.get(i);
             ConstraintLayout item = (ConstraintLayout) getLayoutInflater().inflate(R.layout.item_event, null);
             ((TextView) (item.findViewById(R.id.textName))).setText(evt.Name);
 
-            if (System.currentTimeMillis() / 1000 > evt.TimeBegin) {
+            if (System.currentTimeMillis() / 1000 <= evt.TimeBegin) {
                 ((TextView) (item.findViewById(R.id.textPeople))).setText(String.valueOf(evt.Fu_count));
                 ((TextView) (item.findViewById(R.id.textRating))).setText(String.valueOf(evt.Fu_rating));
                 ((TextView) (item.findViewById(R.id.textComments))).setText(String.valueOf(evt.Comments_count));
@@ -107,16 +109,15 @@ public class FirstFragment extends Fragment implements SwipeRefreshLayout.OnRefr
                         e.printStackTrace();
                     }
                     fragmentManager.beginTransaction().replace(R.id.container, fragment).commit();
-
-
                 }
             });
+            ((ImageView)item.findViewById(R.id.imgIcon)).setImageBitmap(LoginActivity.Types.get(evt.Type));
             ((LinearLayout) getView().findViewById(R.id.Main)).addView(item);
         }
 
     }
     @Override
     public void onRefresh() {
-        Event.Refreash(true);
+        Event.Refresh(true);
     }
 }

@@ -1,21 +1,27 @@
 package com.example.andrei.ode;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.CalendarContract;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.graphics.drawable.VectorDrawableCompat;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -34,6 +40,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.SupportMapFragment;
+import com.vk.sdk.VKScope;
+import com.vk.sdk.VKSdk;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -41,6 +51,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
+
+import static com.example.andrei.ode.LoginActivity.db;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -58,21 +71,76 @@ public class MainActivity extends AppCompatActivity
     static String MyFName = "";
     static String MyLName = "";
 
+    public static boolean isOffline = false;
+
     static boolean isMainFragment = true;
     EditText edtSearch;
     static Activity MainContext;
     static MainActivity This;
     static NavigationView navigationView;
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint({"SetTextI18n", "StaticFieldLeak"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        if (isOffline) {
+            new AsyncTask<Void, Void, Void>() {
+                @Override
+                protected Void doInBackground(Void... voids) {
+                    try {
+                        String s = MainActivity.doGet(MainActivity.Domain + "/auth_vk?token=" + LoginActivity.sharedPref.getString("user_token_vk", ""));
 
+                        final JSONObject jsonObject = new JSONObject(s);
+                        if (jsonObject.has("error")) {
+                            LoginActivity.editor.putString("user_token", "");
+                            LoginActivity.editor.commit();
+                            Intent myIntent = new Intent(MainActivity.this, LoginActivity.class);
+                            MainActivity.this.startActivity(myIntent);
+                            MainActivity.this.finish();
+                            return null;
+                        }
+                        MainActivity.MyID = jsonObject.getLong("main_id");
+                        MainActivity.MyFName = jsonObject.getString("first_name");
+                        MainActivity.MyLName = jsonObject.getString("last_name");
+                        MainActivity.MyIDVK = jsonObject.getLong("id");
+                        MainActivity.MyPhoto = jsonObject.getString("photo_200");
+                        MainActivity.MyPRating = jsonObject.getLong("reputation");
+                        MainActivity.MyCRating = jsonObject.getLong("creator_reputation");
+                        MainActivity.MyToken = jsonObject.getString("token");
+                        MainActivity.MyTokenVK = LoginActivity.sharedPref.getString("user_token_vk", "");
+
+                        LoginActivity.editor.putString("user_token", jsonObject.getString("token"));
+                        LoginActivity.editor.commit();
+
+                        final User usr = new User();
+                        usr.ID = MainActivity.MyID;
+                        usr.Image = MainActivity.MyPhoto;
+                        usr.FName = MainActivity.MyFName;
+                        usr.LName = MainActivity.MyLName;
+                        usr.VkID = String.valueOf(MainActivity.MyIDVK);
+                        usr.CRating = MainActivity.MyCRating;
+                        usr.Rating = MainActivity.MyPRating;
+
+                        new AsyncTask<Void, Void, Void>() {
+                            @Override
+                            protected Void doInBackground(Void... voids) {
+                                db.getUserDao().insert(usr);
+                                return null;
+                            }
+                        }.execute();
+                        User.Users.put(usr.ID, usr);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                }
+            }.execute();
+        }
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         This = this;
@@ -87,7 +155,7 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         onNavigationItemSelected(navigationView.getMenu().getItem(0));
-        Event.Refreash(true);
+        Event.Refresh(true);
 
         new URLImage((ImageView) navigationView.getHeaderView(0).findViewById(R.id.imageView)).execute(MyPhoto);
         ((TextView) navigationView.getHeaderView(0).findViewById(R.id.FLName)).setText(MyFName + " " + MyLName);
@@ -145,17 +213,47 @@ public class MainActivity extends AppCompatActivity
             fragmentClass = FirstFragment.class;
             fragmentTollBar = FirstFragmentT.class;
         } else if (id == R.id.nav_show_map) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                            != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                        1231);
+
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED ||
+                        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                                != PackageManager.PERMISSION_GRANTED)
+                    return false;
+            }
             fragmentClass = MapsFragment.class;
             fragmentTollBar = FirstFragmentT.class;
         } else if (id == R.id.nav_create_event) {
             fragmentClass = CreateEventFragment.class;
             fragmentTollBar = CreateEventFragmentT.class;
+            CreateEventFragmentT.Label = "Создание мероприятия";
         } else if (id == R.id.nav_chat_location) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                            != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                        1231);
+
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED ||
+                        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                                != PackageManager.PERMISSION_GRANTED)
+                    return false;
+            }
             fragmentClass = ChatFragment.class;
-            fragmentTollBar = FirstFragmentT.class;
+            fragmentTollBar = ChatFragmentT.class;
         } else if (id == R.id.nav_show_qr) {
             fragmentClass = ShowQRFragment.class;
-            fragmentTollBar = FirstFragmentT.class;
+            fragmentTollBar = CreateEventFragmentT.class;
+            CreateEventFragmentT.Label = "Регистрация места";
         }
 
         try {

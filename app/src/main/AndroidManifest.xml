@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.andrei.ode">
+    package="com.example.andrei.ode"
+    android:installLocation="auto">
 
+    <uses-feature android:name="android.hardware.camera" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -16,6 +20,18 @@
         android:theme="@style/AppTheme">
 
         <meta-data
+            android:name="com.example.andrei.barcodes"
+            android:value="@integer/google_play_services_version" />
+        <meta-data
+            android:name="com.example.andrei.barcodes.DEPENDENCIES"
+            android:value="barcode" />
+
+        <activity
+            android:name="MainActivityQR"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="stateHidden" />
+
+        <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyB448A_WFyjXD4kqOKt7XfA9TX-_sLY-AI" />
 
@@ -27,7 +43,7 @@
             android:name=".MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar"
-            android:windowSoftInputMode="stateHidden"></activity>
+            android:windowSoftInputMode="stateHidden" />
         <activity android:name=".LoginActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

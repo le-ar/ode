@@ -49,7 +49,7 @@ public class CreateEventFragment extends Fragment {
     int myDayE = 03;
     int myHourE = 0;
     int myMinuteE = 0;
-    String[] data = {"Спорт", "Музей", "Кино", "Скидки", "Прочее"};
+    static public String[] data = {"Спорт", "Театр", "Кино", "Скидки", "Прочее", "Музей", "Лекция", "Ярмарка", "Концерт"};
 
     boolean isBegin = true;
 
@@ -111,20 +111,20 @@ public class CreateEventFragment extends Fragment {
                             long ccc = cal.getTimeInMillis();
                             long ddd = TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings();
 
+                            JSONObject jsonobj = new JSONObject();
+                            jsonobj.put("name", (((EditText) view.findViewById(R.id.Name)).getText().toString()));
+                            jsonobj.put("time", ((cal.getTimeInMillis()) / 1000));
+                            jsonobj.put("time_end", ((cal1.getTimeInMillis()) / 1000));
+                            jsonobj.put("longitude", String.valueOf(MapActivity.Lng));
+                            jsonobj.put("latitude", String.valueOf(MapActivity.Lat));
+                            jsonobj.put("s_description", (((EditText) view.findViewById(R.id.s_desc)).getText().toString()));
+                            jsonobj.put("l_description", (((EditText) view.findViewById(R.id.l_desc3)).getText().toString()));
+                            jsonobj.put("cost", (((EditText) view.findViewById(R.id.s_desc2)).getText().toString().equals("") ? 0 : Long.parseLong(((EditText) view.findViewById(R.id.s_desc2)).getText().toString())));
+                            jsonobj.put("type", spinner.getSelectedItemPosition());
                             String request = MainActivity.Domain + "/addevent?" +
                                     "main_id=" + MainActivity.MyID
                                     + "&token=" + MainActivity.MyToken
-                                    + "&request={" +
-                                    "\"name\":\"" + URLEncoder.encode(((EditText) view.findViewById(R.id.Name)).getText().toString(), "utf-8") + "\"," +
-                                    "\"time\":" + String.valueOf(((cal.getTimeInMillis()) / 1000)) + "," +
-                                    "\"time_end\":" + String.valueOf(((cal1.getTimeInMillis()) / 1000)) + "," +
-                                    "\"longitude\":\"" + String.valueOf(MapActivity.Lng) + "\"," +
-                                    "\"latitude\":\"" + String.valueOf(MapActivity.Lat) + "\"," +
-                                    "\"s_description\":\"" + URLEncoder.encode(((EditText) view.findViewById(R.id.s_desc)).getText().toString(), "utf-8") + "\"," +
-                                    "\"l_description\":\"" + URLEncoder.encode(((EditText) view.findViewById(R.id.l_desc3)).getText().toString(), "utf-8") + "\"," +
-                                    "\"cost\":" + (((EditText) view.findViewById(R.id.s_desc2)).getText().toString().equals("") ? "0" : ((EditText) view.findViewById(R.id.Name)).getText().toString()) + "," +
-                                    "\"type\":" + spinner.getSelectedItemPosition() +
-                                    "}";
+                                    + "&request=" + URLEncoder.encode(jsonobj.toString());
 
                             s = MainActivity.doGet(request);
                         } catch (Exception e) {
